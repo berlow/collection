@@ -2,6 +2,7 @@
     "name": "berlow/collection",
     "description": "Collections library from laravel",
     "type": "library",
+    "license": "MIT",
     "authors": [
         {
             "name": "wangliwei",
