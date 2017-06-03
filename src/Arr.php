@@ -9,7 +9,6 @@
 namespace Berlow\Collection;
 
 
-
 use Closure;
 
 /**
@@ -167,21 +166,23 @@ class Arr
     /**
      * Flatten a multi-dimensional array into a single level.
      *
-     * @param array $array
-     *
+     * @param  array $array
+     * @param  int $depth
      * @return array
      */
-    public static function flatten($array)
+    public static function flatten($array, $depth = INF)
     {
-        $return = [];
-        array_walk_recursive(
-            $array,
-            function ($x) use (&$return) {
-                $return[] = $x;
-            }
-        );
+        return array_reduce($array, function ($result, $item) use ($depth) {
+            $item = $item instanceof Collection ? $item->all() : $item;
 
-        return $return;
+            if (!is_array($item)) {
+                return array_merge($result, [$item]);
+            } elseif ($depth === 1) {
+                return array_merge($result, array_values($item));
+            } else {
+                return array_merge($result, static::flatten($item, $depth - 1));
+            }
+        }, []);
     }
 
     /**
@@ -373,7 +374,7 @@ class Arr
     /**
      * Collapse an array of arrays into a single array.
      *
-     * @param  array  $array
+     * @param  array $array
      * @return array
      */
     public static function collapse($array)
@@ -383,7 +384,7 @@ class Arr
         foreach ($array as $values) {
             if ($values instanceof Collection) {
                 $values = $values->all();
-            } elseif (! is_array($values)) {
+            } elseif (!is_array($values)) {
                 continue;
             }
 
@@ -396,7 +397,7 @@ class Arr
     /**
      * Determine whether the given value is array accessible.
      *
-     * @param  mixed  $value
+     * @param  mixed $value
      * @return bool
      */
     public static function accessible($value)
@@ -407,8 +408,8 @@ class Arr
     /**
      * Determine if the given key exists in the provided array.
      *
-     * @param  \ArrayAccess|array  $array
-     * @param  string|int  $key
+     * @param  \ArrayAccess|array $array
+     * @param  string|int $key
      * @return bool
      */
     public static function exists($array, $key)
@@ -418,5 +419,100 @@ class Arr
         }
 
         return array_key_exists($key, $array);
+    }
+
+    /**
+     * Check if an item or items exist in an array using "dot" notation.
+     *
+     * @param  \ArrayAccess|array $array
+     * @param  string|array $keys
+     * @return bool
+     */
+    public static function has($array, $keys)
+    {
+        if (is_null($keys)) {
+            return false;
+        }
+
+        $keys = (array)$keys;
+
+        if (!$array) {
+            return false;
+        }
+
+        if ($keys === []) {
+            return false;
+        }
+
+        foreach ($keys as $key) {
+            $subKeyArray = $array;
+
+            if (static::exists($array, $key)) {
+                continue;
+            }
+
+            foreach (explode('.', $key) as $segment) {
+                if (static::accessible($subKeyArray) && static::exists($subKeyArray, $segment)) {
+                    $subKeyArray = $subKeyArray[$segment];
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Push an item onto the beginning of an array.
+     *
+     * @param  array $array
+     * @param  mixed $value
+     * @param  mixed $key
+     * @return array
+     */
+    public static function prepend($array, $value, $key = null)
+    {
+        if (is_null($key)) {
+            array_unshift($array, $value);
+        } else {
+            $array = [$key => $value] + $array;
+        }
+
+        return $array;
+    }
+
+    /**
+     * Recursively sort an array by keys and values.
+     *
+     * @param  array $array
+     * @return array
+     */
+    public static function sortRecursive($array)
+    {
+        foreach ($array as &$value) {
+            if (is_array($value)) {
+                $value = static::sortRecursive($value);
+            }
+        }
+
+        if (static::isAssoc($array)) {
+            ksort($array);
+        } else {
+            sort($array);
+        }
+
+        return $array;
+    }
+
+    /**
+     * If the given value is not an array, wrap it in one.
+     *
+     * @param  mixed $value
+     * @return array
+     */
+    public static function wrap($value)
+    {
+        return !is_array($value) ? [$value] : $value;
     }
 }
