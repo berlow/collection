@@ -1,0 +1,17 @@
+{
+    "name": "berlow/collection",
+    "description": "Collections library from laravel",
+    "type": "library",
+    "authors": [
+        {
+            "name": "wangliwei",
+            "email": "berlow@126.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Berlow\\Collection\\": "src/"
+        }
+    },
+}
